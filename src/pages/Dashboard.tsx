@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -65,13 +64,19 @@ const Dashboard = () => {
     }
   });
 
-  // Fetch recent material requests with images
+  // Fetch recent material requests with images and user info
   const { data: recentMaterialRequests } = useQuery({
     queryKey: ['recent-material-requests'],
     queryFn: async () => {
       const { data } = await supabase
         .from('material_requests')
-        .select('*')
+        .select(`
+          *,
+          users:user_id (
+            name,
+            phone
+          )
+        `)
         .order('created_at', { ascending: false })
         .limit(5);
       return data || [];
@@ -213,7 +218,10 @@ const Dashboard = () => {
                     <TableHead>Image</TableHead>
                     <TableHead>Material</TableHead>
                     <TableHead>Quantity</TableHead>
+                    <TableHead>Urgency</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Created By</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -243,12 +251,27 @@ const Dashboard = () => {
                       <TableCell>{request.quantity || 0} {request.unit || ''}</TableCell>
                       <TableCell>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          request.urgency === 'high' ? 'bg-red-100 text-red-800' :
+                          request.urgency === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-green-100 text-green-800'
+                        }`}>
+                          {request.urgency || 'medium'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                           request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                           request.status === 'approved' ? 'bg-green-100 text-green-800' :
                           'bg-red-100 text-red-800'
                         }`}>
                           {request.status || 'pending'}
                         </span>
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-600">
+                        {request.created_at ? new Date(request.created_at).toLocaleDateString() : 'N/A'}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {request.users?.name || request.users?.phone || 'Unknown'}
                       </TableCell>
                     </TableRow>
                   ))}
