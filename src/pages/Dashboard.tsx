@@ -45,13 +45,19 @@ const Dashboard = () => {
     }
   });
 
-  // Fetch recent activities with images
+  // Fetch recent activities with images and user info
   const { data: recentActivities } = useQuery({
     queryKey: ['recent-activities'],
     queryFn: async () => {
       const { data } = await supabase
         .from('activities')
-        .select('*')
+        .select(`
+          *,
+          users:user_id (
+            name,
+            phone
+          )
+        `)
         .order('created_at', { ascending: false })
         .limit(5);
       return data || [];
@@ -143,6 +149,8 @@ const Dashboard = () => {
                     <TableHead>Type</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead>Hours</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Created By</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -150,14 +158,20 @@ const Dashboard = () => {
                     <TableRow key={activity.id}>
                       <TableCell>
                         {activity.image_url ? (
-                          <img 
-                            src={activity.image_url} 
-                            alt="Activity" 
-                            className="w-12 h-12 object-cover rounded-md"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
+                          <div className="w-12 h-12">
+                            <img 
+                              src={activity.image_url} 
+                              alt="Activity" 
+                              className="w-12 h-12 object-cover rounded-md"
+                              onError={(e) => {
+                                console.log('Image failed to load:', activity.image_url);
+                                e.currentTarget.style.display = 'none';
+                              }}
+                              onLoad={() => {
+                                console.log('Image loaded successfully:', activity.image_url);
+                              }}
+                            />
+                          </div>
                         ) : (
                           <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center">
                             <span className="text-gray-400 text-xs">No img</span>
@@ -165,8 +179,14 @@ const Dashboard = () => {
                         )}
                       </TableCell>
                       <TableCell className="font-medium">{activity.activity_type || 'N/A'}</TableCell>
-                      <TableCell className="truncate max-w-[150px]">{activity.description || 'No description'}</TableCell>
+                      <TableCell className="truncate max-w-[120px]">{activity.description || 'No description'}</TableCell>
                       <TableCell>{activity.hours || 0}</TableCell>
+                      <TableCell className="text-sm text-gray-600">
+                        {activity.created_at ? new Date(activity.created_at).toLocaleDateString() : 'N/A'}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {activity.users?.name || activity.users?.phone || 'Unknown'}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
