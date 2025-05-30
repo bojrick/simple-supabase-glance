@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,7 +45,7 @@ const Dashboard = () => {
     }
   });
 
-  // Fetch recent activities
+  // Fetch recent activities with images
   const { data: recentActivities } = useQuery({
     queryKey: ['recent-activities'],
     queryFn: async () => {
@@ -59,7 +58,7 @@ const Dashboard = () => {
     }
   });
 
-  // Fetch recent material requests
+  // Fetch recent material requests with images
   const { data: recentMaterialRequests } = useQuery({
     queryKey: ['recent-material-requests'],
     queryFn: async () => {
@@ -140,6 +139,7 @@ const Dashboard = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Image</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead>Hours</TableHead>
@@ -148,8 +148,24 @@ const Dashboard = () => {
                 <TableBody>
                   {recentActivities?.map((activity) => (
                     <TableRow key={activity.id}>
+                      <TableCell>
+                        {activity.image_url ? (
+                          <img 
+                            src={activity.image_url} 
+                            alt="Activity" 
+                            className="w-12 h-12 object-cover rounded-md"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center">
+                            <span className="text-gray-400 text-xs">No img</span>
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell className="font-medium">{activity.activity_type || 'N/A'}</TableCell>
-                      <TableCell className="truncate max-w-[200px]">{activity.description || 'No description'}</TableCell>
+                      <TableCell className="truncate max-w-[150px]">{activity.description || 'No description'}</TableCell>
                       <TableCell>{activity.hours || 0}</TableCell>
                     </TableRow>
                   ))}
@@ -167,6 +183,7 @@ const Dashboard = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Image</TableHead>
                     <TableHead>Material</TableHead>
                     <TableHead>Quantity</TableHead>
                     <TableHead>Status</TableHead>
@@ -175,6 +192,22 @@ const Dashboard = () => {
                 <TableBody>
                   {recentMaterialRequests?.map((request) => (
                     <TableRow key={request.id}>
+                      <TableCell>
+                        {request.image_url ? (
+                          <img 
+                            src={request.image_url} 
+                            alt="Material" 
+                            className="w-12 h-12 object-cover rounded-md"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center">
+                            <span className="text-gray-400 text-xs">No img</span>
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell className="font-medium">{request.material_name || 'N/A'}</TableCell>
                       <TableCell>{request.quantity || 0} {request.unit || ''}</TableCell>
                       <TableCell>
