@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -90,6 +91,12 @@ const Dashboard = () => {
     }
   });
 
+  // Helper function to get the correct image URL
+  const getImageUrl = (imageKey: string | null) => {
+    if (!imageKey) return null;
+    return `https://pub-480de15262b346c8b5ebf5e8141b43f9.r2.dev/${imageKey}`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
@@ -157,18 +164,18 @@ const Dashboard = () => {
                   {recentActivities?.map((activity) => (
                     <TableRow key={activity.id}>
                       <TableCell>
-                        {activity.image_url ? (
+                        {activity.image_key ? (
                           <div className="w-12 h-12">
                             <img 
-                              src={activity.image_url} 
+                              src={getImageUrl(activity.image_key)} 
                               alt="Activity" 
                               className="w-12 h-12 object-cover rounded-md"
                               onError={(e) => {
-                                console.log('Image failed to load:', activity.image_url);
+                                console.log('Image failed to load:', getImageUrl(activity.image_key));
                                 e.currentTarget.style.display = 'none';
                               }}
                               onLoad={() => {
-                                console.log('Image loaded successfully:', activity.image_url);
+                                console.log('Image loaded successfully:', getImageUrl(activity.image_key));
                               }}
                             />
                           </div>
@@ -213,13 +220,17 @@ const Dashboard = () => {
                   {recentMaterialRequests?.map((request) => (
                     <TableRow key={request.id}>
                       <TableCell>
-                        {request.image_url ? (
+                        {request.image_key ? (
                           <img 
-                            src={request.image_url} 
+                            src={getImageUrl(request.image_key)} 
                             alt="Material" 
                             className="w-12 h-12 object-cover rounded-md"
                             onError={(e) => {
+                              console.log('Material image failed to load:', getImageUrl(request.image_key));
                               e.currentTarget.style.display = 'none';
+                            }}
+                            onLoad={() => {
+                              console.log('Material image loaded successfully:', getImageUrl(request.image_key));
                             }}
                           />
                         ) : (
