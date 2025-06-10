@@ -1,7 +1,5 @@
-import { Calendar, Users, Building, Activity, Package, BookOpen, MessageSquare, Timer, Key, BarChart3, LogOut } from "lucide-react";
+import { Calendar, Users, Building, Activity, Package, BookOpen, MessageSquare, Timer, Key, BarChart3 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
-import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -66,11 +64,6 @@ const menuItems = [
 export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
-
-  const handleLogout = async () => {
-    await signOut();
-  };
 
   return (
     <Sidebar>
@@ -102,11 +95,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4 space-y-2">
-        <Button variant="outline" onClick={handleLogout} className="w-full">
-          <LogOut className="h-4 w-4 mr-2" />
-          Logout
-        </Button>
+      <SidebarFooter className="p-4">
         <p className="text-sm text-muted-foreground">ERP System v1.0</p>
       </SidebarFooter>
     </Sidebar>
