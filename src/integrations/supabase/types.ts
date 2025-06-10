@@ -99,6 +99,51 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_inquiries: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          expected_price_range: string | null
+          full_name: string | null
+          id: string
+          notes: string | null
+          occupation: string | null
+          office_space_requirement: string | null
+          office_space_use: string | null
+          phone: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          expected_price_range?: string | null
+          full_name?: string | null
+          id?: string
+          notes?: string | null
+          occupation?: string | null
+          office_space_requirement?: string | null
+          office_space_use?: string | null
+          phone: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          expected_price_range?: string | null
+          full_name?: string | null
+          id?: string
+          notes?: string | null
+          occupation?: string | null
+          office_space_requirement?: string | null
+          office_space_use?: string | null
+          phone?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       employee_otps: {
         Row: {
           attempts: number | null
