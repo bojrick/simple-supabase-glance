@@ -8,11 +8,26 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Edit, Trash2, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useForm } from "react-hook-form";
 
 const Sites = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [editingSite, setEditingSite] = useState(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const form = useForm({
+    defaultValues: {
+      name: "",
+      location: "",
+      status: "planning"
+    }
+  });
 
   const { data: sites, isLoading } = useQuery({
     queryKey: ['sites'],
@@ -30,6 +45,60 @@ const Sites = () => {
       
       if (error) throw error;
       return data || [];
+    }
+  });
+
+  const createSiteMutation = useMutation({
+    mutationFn: async (siteData: any) => {
+      const { error } = await supabase
+        .from('sites')
+        .insert([siteData]);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sites'] });
+      setIsAddDialogOpen(false);
+      form.reset();
+      toast({
+        title: "Success",
+        description: "Site created successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create site",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const updateSiteMutation = useMutation({
+    mutationFn: async ({ id, ...siteData }: any) => {
+      const { error } = await supabase
+        .from('sites')
+        .update(siteData)
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sites'] });
+      setIsEditDialogOpen(false);
+      setEditingSite(null);
+      form.reset();
+      toast({
+        title: "Success",
+        description: "Site updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update site",
+        variant: "destructive",
+      });
     }
   });
 
@@ -62,6 +131,36 @@ const Sites = () => {
     site.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     site.location?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
+
+  const handleEdit = (site: any) => {
+    setEditingSite(site);
+    form.reset({
+      name: site.name || "",
+      location: site.location || "",
+      status: site.status
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleAdd = () => {
+    form.reset({
+      name: "",
+      location: "",
+      status: "planning"
+    });
+    setIsAddDialogOpen(true);
+  };
+
+  const onSubmit = (data: any) => {
+    if (editingSite) {
+      updateSiteMutation.mutate({
+        id: editingSite.id,
+        ...data
+      });
+    } else {
+      createSiteMutation.mutate(data);
+    }
+  };
 
   const handleDelete = async (siteId: string) => {
     if (window.confirm("Are you sure you want to delete this site?")) {
@@ -104,7 +203,7 @@ const Sites = () => {
             />
           </div>
           
-          <Button>
+          <Button onClick={handleAdd}>
             <Plus className="h-4 w-4 mr-2" />
             Add Site
           </Button>
@@ -159,7 +258,11 @@ const Sites = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEdit(site)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button 
@@ -178,6 +281,160 @@ const Sites = () => {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Add Site Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New Site</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Site Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter site name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter location" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="planning">Planning</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="on_hold">On Hold</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsAddDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createSiteMutation.isPending}>
+                  {createSiteMutation.isPending ? "Creating..." : "Create Site"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Site Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Site</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Site Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter site name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter location" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="planning">Planning</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="on_hold">On Hold</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateSiteMutation.isPending}>
+                  {updateSiteMutation.isPending ? "Updating..." : "Update Site"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
