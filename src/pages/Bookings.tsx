@@ -8,11 +8,27 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Edit, Trash2, Calendar, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
 
 const Bookings = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [editingBooking, setEditingBooking] = useState(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const form = useForm({
+    defaultValues: {
+      customer_name: "",
+      customer_phone: "",
+      slot_time: "",
+      duration_minutes: 60,
+      notes: ""
+    }
+  });
 
   const { data: bookings, isLoading } = useQuery({
     queryKey: ['bookings'],
@@ -77,6 +93,34 @@ const Bookings = () => {
     }
   });
 
+  const updateBookingMutation = useMutation({
+    mutationFn: async ({ id, ...bookingData }: any) => {
+      const { error } = await supabase
+        .from('bookings')
+        .update(bookingData)
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      setIsEditDialogOpen(false);
+      setEditingBooking(null);
+      form.reset();
+      toast({
+        title: "Success",
+        description: "Booking updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update booking",
+        variant: "destructive",
+      });
+    }
+  });
+
   const filteredBookings = bookings?.filter(booking => 
     booking.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     booking.customer_phone?.includes(searchTerm)
@@ -90,6 +134,29 @@ const Bookings = () => {
 
   const handleStatusUpdate = (bookingId: string, status: string) => {
     updateStatusMutation.mutate({ bookingId, status });
+  };
+
+  const handleEdit = (booking: any) => {
+    setEditingBooking(booking);
+    const slotTime = booking.slot_time ? new Date(booking.slot_time).toISOString().slice(0, 16) : "";
+    form.reset({
+      customer_name: booking.customer_name || "",
+      customer_phone: booking.customer_phone || "",
+      slot_time: slotTime,
+      duration_minutes: booking.duration_minutes || 60,
+      notes: booking.notes || ""
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const onSubmit = (data: any) => {
+    if (editingBooking) {
+      updateBookingMutation.mutate({
+        id: editingBooking.id,
+        ...data,
+        slot_time: data.slot_time ? new Date(data.slot_time).toISOString() : null
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -187,7 +254,11 @@ const Bookings = () => {
                           </Button>
                         </>
                       )}
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEdit(booking)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button 
@@ -206,6 +277,107 @@ const Bookings = () => {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Booking</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="customer_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Customer Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter customer name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="customer_phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Customer Phone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter phone number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="slot_time"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Slot Time</FormLabel>
+                      <FormControl>
+                        <Input type="datetime-local" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="duration_minutes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Duration (min)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="60" 
+                          {...field} 
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 60)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Additional notes..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateBookingMutation.isPending}>
+                  {updateBookingMutation.isPending ? "Updating..." : "Update Booking"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

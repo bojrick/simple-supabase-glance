@@ -7,11 +7,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Edit, Trash2, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
 
 const Activities = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [editingActivity, setEditingActivity] = useState(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const form = useForm({
+    defaultValues: {
+      activity_type: "",
+      description: "",
+      hours: 0
+    }
+  });
 
   const { data: activities, isLoading } = useQuery({
     queryKey: ['activities'],
@@ -61,6 +75,34 @@ const Activities = () => {
     }
   });
 
+  const updateActivityMutation = useMutation({
+    mutationFn: async ({ id, ...activityData }: any) => {
+      const { error } = await supabase
+        .from('activities')
+        .update(activityData)
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      setIsEditDialogOpen(false);
+      setEditingActivity(null);
+      form.reset();
+      toast({
+        title: "Success",
+        description: "Activity updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update activity",
+        variant: "destructive",
+      });
+    }
+  });
+
   const filteredActivities = activities?.filter(activity => 
     activity.activity_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     activity.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -70,6 +112,25 @@ const Activities = () => {
   const handleDelete = async (activityId: string) => {
     if (window.confirm("Are you sure you want to delete this activity?")) {
       deleteActivityMutation.mutate(activityId);
+    }
+  };
+
+  const handleEdit = (activity: any) => {
+    setEditingActivity(activity);
+    form.reset({
+      activity_type: activity.activity_type || "",
+      description: activity.description || "",
+      hours: activity.hours || 0
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const onSubmit = (data: any) => {
+    if (editingActivity) {
+      updateActivityMutation.mutate({
+        id: editingActivity.id,
+        ...data
+      });
     }
   };
 
@@ -149,7 +210,11 @@ const Activities = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEdit(activity)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button 
@@ -168,6 +233,77 @@ const Activities = () => {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Activity</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="activity_type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Activity Type</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter activity type" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Enter activity description" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="hours"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Hours</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        placeholder="Enter hours worked" 
+                        {...field} 
+                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateActivityMutation.isPending}>
+                  {updateActivityMutation.isPending ? "Updating..." : "Update Activity"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

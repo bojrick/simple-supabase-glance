@@ -8,11 +8,26 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useForm } from "react-hook-form";
 
 const Users = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [editingUser, setEditingUser] = useState(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const form = useForm({
+    defaultValues: {
+      name: "",
+      email: "",
+      role: "",
+      is_verified: false
+    }
+  });
 
   const { data: users, isLoading } = useQuery({
     queryKey: ['users'],
@@ -52,6 +67,34 @@ const Users = () => {
     }
   });
 
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ id, ...userData }: any) => {
+      const { error } = await supabase
+        .from('users')
+        .update(userData)
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setIsEditDialogOpen(false);
+      setEditingUser(null);
+      form.reset();
+      toast({
+        title: "Success",
+        description: "User updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update user",
+        variant: "destructive",
+      });
+    }
+  });
+
   const filteredUsers = users?.filter(user => 
     user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.phone?.includes(searchTerm) ||
@@ -61,6 +104,26 @@ const Users = () => {
   const handleDelete = async (userId: string) => {
     if (window.confirm("Are you sure you want to delete this user?")) {
       deleteUserMutation.mutate(userId);
+    }
+  };
+
+  const handleEdit = (user: any) => {
+    setEditingUser(user);
+    form.reset({
+      name: user.name || "",
+      email: user.email || "",
+      role: user.role,
+      is_verified: user.is_verified
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const onSubmit = (data: any) => {
+    if (editingUser) {
+      updateUserMutation.mutate({
+        id: editingUser.id,
+        ...data
+      });
     }
   };
 
@@ -138,7 +201,11 @@ const Users = () => {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEdit(user)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button 
@@ -157,6 +224,103 @@ const Users = () => {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter user name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter email address" type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="manager">Manager</SelectItem>
+                        <SelectItem value="employee">Employee</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="is_verified"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Verification Status</FormLabel>
+                    <Select onValueChange={(value) => field.onChange(value === 'true')} defaultValue={field.value?.toString()}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select verification status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="true">Verified</SelectItem>
+                        <SelectItem value="false">Pending</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateUserMutation.isPending}>
+                  {updateUserMutation.isPending ? "Updating..." : "Update User"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

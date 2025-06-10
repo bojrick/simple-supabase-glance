@@ -8,11 +8,28 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Edit, Trash2, Package, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
 
 const MaterialRequests = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [editingRequest, setEditingRequest] = useState(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const form = useForm({
+    defaultValues: {
+      material_name: "",
+      quantity: 0,
+      unit: "",
+      urgency: "medium",
+      notes: ""
+    }
+  });
 
   const { data: materialRequests, isLoading } = useQuery({
     queryKey: ['material-requests'],
@@ -87,6 +104,34 @@ const MaterialRequests = () => {
     }
   });
 
+  const updateRequestMutation = useMutation({
+    mutationFn: async ({ id, ...requestData }: any) => {
+      const { error } = await supabase
+        .from('material_requests')
+        .update(requestData)
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['material-requests'] });
+      setIsEditDialogOpen(false);
+      setEditingRequest(null);
+      form.reset();
+      toast({
+        title: "Success",
+        description: "Material request updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to update material request",
+        variant: "destructive",
+      });
+    }
+  });
+
   const filteredRequests = materialRequests?.filter(request => 
     request.material_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     request.users?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -101,6 +146,27 @@ const MaterialRequests = () => {
 
   const handleStatusUpdate = (requestId: string, status: string) => {
     updateStatusMutation.mutate({ requestId, status });
+  };
+
+  const handleEdit = (request: any) => {
+    setEditingRequest(request);
+    form.reset({
+      material_name: request.material_name || "",
+      quantity: request.quantity || 0,
+      unit: request.unit || "",
+      urgency: request.urgency || "medium",
+      notes: request.notes || ""
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const onSubmit = (data: any) => {
+    if (editingRequest) {
+      updateRequestMutation.mutate({
+        id: editingRequest.id,
+        ...data
+      });
+    }
   };
 
   const getUrgencyColor = (urgency: string) => {
@@ -227,7 +293,11 @@ const MaterialRequests = () => {
                           </Button>
                         </>
                       )}
-                      <Button variant="outline" size="sm">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEdit(request)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
                       <Button 
@@ -246,6 +316,116 @@ const MaterialRequests = () => {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Material Request</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="material_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Material Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter material name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="quantity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Quantity</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="Enter quantity" 
+                          {...field} 
+                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="unit"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Unit</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., kg, pcs, m" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              <FormField
+                control={form.control}
+                name="urgency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Urgency</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select urgency level" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="low">Low</SelectItem>
+                        <SelectItem value="medium">Medium</SelectItem>
+                        <SelectItem value="high">High</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Additional notes..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateRequestMutation.isPending}>
+                  {updateRequestMutation.isPending ? "Updating..." : "Update Request"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
