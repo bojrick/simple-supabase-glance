@@ -274,7 +274,7 @@ const Users = () => {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="manager">Manager</SelectItem>
+                        <SelectItem value="customer">Customer</SelectItem>
                         <SelectItem value="employee">Employee</SelectItem>
                       </SelectContent>
                     </Select>
