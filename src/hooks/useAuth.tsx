@@ -6,8 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signInWithOtp: (email: string) => Promise<{ error: any }>;
-  verifyOtp: (email: string, token: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
 }
 
@@ -38,21 +37,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signInWithOtp = async (email: string) => {
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-      },
-    });
-    return { error };
-  };
+  const signIn = async (email: string, password: string) => {
+    // First check if user exists in our users table with admin role
+    const { data: adminUser } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .eq('role', 'admin')
+      .single();
+    
+    if (!adminUser) {
+      return { error: { message: 'Only admin users can access this system' } };
+    }
 
-  const verifyOtp = async (email: string, token: string) => {
-    const { error } = await supabase.auth.verifyOtp({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
-      token,
-      type: 'email',
+      password,
     });
     return { error };
   };
@@ -66,8 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     session,
     loading,
-    signInWithOtp,
-    verifyOtp,
+    signIn,
     signOut,
   };
 
