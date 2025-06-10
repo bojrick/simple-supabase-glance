@@ -99,6 +99,51 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_inquiries: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          expected_price_range: string | null
+          full_name: string | null
+          id: string
+          notes: string | null
+          occupation: string | null
+          office_space_requirement: string | null
+          office_space_use: string | null
+          phone: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          expected_price_range?: string | null
+          full_name?: string | null
+          id?: string
+          notes?: string | null
+          occupation?: string | null
+          office_space_requirement?: string | null
+          office_space_use?: string | null
+          phone: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          expected_price_range?: string | null
+          full_name?: string | null
+          id?: string
+          notes?: string | null
+          occupation?: string | null
+          office_space_requirement?: string | null
+          office_space_use?: string | null
+          phone?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       employee_otps: {
         Row: {
           attempts: number | null
@@ -122,6 +167,72 @@ export type Database = {
           phone?: string
         }
         Relationships: []
+      }
+      invoices: {
+        Row: {
+          amount: number
+          company_name: string
+          created_at: string | null
+          currency: string | null
+          id: string
+          image_key: string | null
+          image_url: string | null
+          invoice_date: string
+          invoice_description: string
+          notes: string | null
+          site_id: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          company_name: string
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          image_key?: string | null
+          image_url?: string | null
+          invoice_date: string
+          invoice_description: string
+          notes?: string | null
+          site_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          company_name?: string
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          image_key?: string | null
+          image_url?: string | null
+          invoice_date?: string
+          invoice_description?: string
+          notes?: string | null
+          site_id?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_site_id_sites_id_fk"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_user_id_users_id_fk"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       material_requests: {
         Row: {

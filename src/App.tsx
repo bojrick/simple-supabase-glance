@@ -14,6 +14,7 @@ import Bookings from "./pages/Bookings";
 import MessageLogs from "./pages/MessageLogs";
 import Sessions from "./pages/Sessions";
 import EmployeeOTPs from "./pages/EmployeeOTPs";
+import CustomerInquiries from "./pages/CustomerInquiries";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
                 <Route path="/message-logs" element={<MessageLogs />} />
                 <Route path="/sessions" element={<Sessions />} />
                 <Route path="/employee-otps" element={<EmployeeOTPs />} />
+                <Route path="/customer-inquiries" element={<CustomerInquiries />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </SidebarInset>

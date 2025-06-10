@@ -1,4 +1,4 @@
-import { Calendar, Users, Building, Activity, Package, BookOpen, MessageSquare, Timer, Key, BarChart3 } from "lucide-react";
+import { Calendar, Users, Building, Activity, Package, BookOpen, MessageSquare, Timer, Key, BarChart3, HelpCircle } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -58,6 +58,11 @@ const menuItems = [
     title: "Employee OTPs",
     url: "/employee-otps",
     icon: Key,
+  },
+  {
+    title: "Customer Inquiries",
+    url: "/customer-inquiries",
+    icon: HelpCircle,
   },
 ];
 
