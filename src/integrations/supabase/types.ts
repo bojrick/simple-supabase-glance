@@ -403,6 +403,8 @@ export type Database = {
           created_at: string | null
           email: string | null
           id: string
+          introduction_sent: boolean | null
+          introduction_sent_at: string | null
           is_verified: boolean | null
           name: string | null
           phone: string
@@ -414,6 +416,8 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          introduction_sent?: boolean | null
+          introduction_sent_at?: string | null
           is_verified?: boolean | null
           name?: string | null
           phone: string
@@ -425,6 +429,8 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          introduction_sent?: boolean | null
+          introduction_sent_at?: string | null
           is_verified?: boolean | null
           name?: string | null
           phone?: string

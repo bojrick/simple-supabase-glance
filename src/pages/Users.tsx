@@ -17,6 +17,7 @@ const Users = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [editingUser, setEditingUser] = useState(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -24,6 +25,7 @@ const Users = () => {
     defaultValues: {
       name: "",
       email: "",
+      phone: "",
       role: "",
       is_verified: false
     }
@@ -62,6 +64,32 @@ const Users = () => {
       toast({
         title: "Error",
         description: "Failed to delete user",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: any) => {
+      const { error } = await supabase
+        .from('users')
+        .insert([userData]);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setIsAddDialogOpen(false);
+      form.reset();
+      toast({
+        title: "Success",
+        description: "User created successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to create user",
         variant: "destructive",
       });
     }
@@ -107,11 +135,23 @@ const Users = () => {
     }
   };
 
+  const handleAdd = () => {
+    form.reset({
+      name: "",
+      email: "",
+      phone: "",
+      role: "",
+      is_verified: false
+    });
+    setIsAddDialogOpen(true);
+  };
+
   const handleEdit = (user: any) => {
     setEditingUser(user);
     form.reset({
       name: user.name || "",
       email: user.email || "",
+      phone: user.phone || "",
       role: user.role,
       is_verified: user.is_verified
     });
@@ -124,6 +164,8 @@ const Users = () => {
         id: editingUser.id,
         ...data
       });
+    } else {
+      createUserMutation.mutate(data);
     }
   };
 
@@ -156,7 +198,7 @@ const Users = () => {
             />
           </div>
           
-          <Button>
+          <Button onClick={handleAdd}>
             <Plus className="h-4 w-4 mr-2" />
             Add User
           </Button>
@@ -248,6 +290,20 @@ const Users = () => {
               
               <FormField
                 control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter phone number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
@@ -315,6 +371,117 @@ const Users = () => {
                 </Button>
                 <Button type="submit" disabled={updateUserMutation.isPending}>
                   {updateUserMutation.isPending ? "Updating..." : "Update User"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter user name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter phone number" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter email address" type="email" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="customer">Customer</SelectItem>
+                        <SelectItem value="employee">Employee</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="is_verified"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Verification Status</FormLabel>
+                    <Select onValueChange={(value) => field.onChange(value === 'true')} defaultValue={field.value?.toString()}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select verification status" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="true">Verified</SelectItem>
+                        <SelectItem value="false">Pending</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsAddDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={createUserMutation.isPending}>
+                  {createUserMutation.isPending ? "Creating..." : "Create User"}
                 </Button>
               </div>
             </form>
