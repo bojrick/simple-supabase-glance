@@ -168,6 +168,121 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_items: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          current_stock: number | null
+          id: string
+          name: string
+          site_id: string | null
+          status: string | null
+          unit: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_stock?: number | null
+          id?: string
+          name: string
+          site_id?: string | null
+          status?: string | null
+          unit: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_stock?: number | null
+          id?: string
+          name?: string
+          site_id?: string | null
+          status?: string | null
+          unit?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_items_created_by_users_id_fk"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_items_site_id_sites_id_fk"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_transactions: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          item_id: string
+          new_stock: number
+          notes: string | null
+          previous_stock: number
+          quantity: number
+          site_id: string | null
+          transaction_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          item_id: string
+          new_stock: number
+          notes?: string | null
+          previous_stock: number
+          quantity: number
+          site_id?: string | null
+          transaction_type: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          item_id?: string
+          new_stock?: number
+          notes?: string | null
+          previous_stock?: number
+          quantity?: number
+          site_id?: string | null
+          transaction_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_transactions_created_by_users_id_fk"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transactions_item_id_inventory_items_id_fk"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_transactions_site_id_sites_id_fk"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount: number
