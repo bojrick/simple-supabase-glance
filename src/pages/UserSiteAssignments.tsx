@@ -392,8 +392,7 @@ const UserSiteAssignments = () => {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="worker">Worker</SelectItem>
-                        <SelectItem value="manager">Manager</SelectItem>
+                        <SelectItem value="employee">Employee</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
                     </Select>
