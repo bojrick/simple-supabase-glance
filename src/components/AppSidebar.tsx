@@ -1,4 +1,4 @@
-import { Calendar, Users, Building, Activity, Package, BookOpen, MessageSquare, Timer, Key, BarChart3, HelpCircle } from "lucide-react";
+import { Calendar, Users, Building, Activity, Package, BookOpen, MessageSquare, Timer, Key, BarChart3, HelpCircle, UserCheck, Box } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -63,6 +63,16 @@ const menuItems = [
     title: "Customer Inquiries",
     url: "/customer-inquiries",
     icon: HelpCircle,
+  },
+  {
+    title: "User Site Assignments",
+    url: "/user-site-assignments",
+    icon: UserCheck,
+  },
+  {
+    title: "Inventory",
+    url: "/inventory",
+    icon: Box,
   },
 ];
 

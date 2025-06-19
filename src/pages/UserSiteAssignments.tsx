@@ -37,20 +37,7 @@ const UserSiteAssignments = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('user_site_assignments')
-        .select(`
-          *,
-          users:user_id (
-            id,
-            name,
-            phone,
-            role
-          ),
-          sites (
-            id,
-            name,
-            location
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -83,6 +70,17 @@ const UserSiteAssignments = () => {
       return data || [];
     }
   });
+
+  // Enrich assignments with user and site data
+  const enrichedAssignments = assignments?.map(assignment => {
+    const user = users?.find(u => u.id === assignment.user_id);
+    const site = sites?.find(s => s.id === assignment.site_id);
+    return {
+      ...assignment,
+      users: user,
+      sites: site
+    };
+  }) || [];
 
   const createAssignmentMutation = useMutation({
     mutationFn: async (assignmentData: any) => {
@@ -163,7 +161,7 @@ const UserSiteAssignments = () => {
     }
   });
 
-  const filteredAssignments = assignments?.filter(assignment => 
+  const filteredAssignments = enrichedAssignments?.filter(assignment => 
     assignment.users?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     assignment.sites?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     assignment.role?.toLowerCase().includes(searchTerm.toLowerCase())
