@@ -34,19 +34,14 @@ const Sites = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sites')
-        .select(`
-          *,
-          manager:manager_id (
-            name,
-            phone
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data || [];
     }
   });
+
 
   const createSiteMutation = useMutation({
     mutationFn: async (siteData: any) => {
@@ -221,7 +216,7 @@ const Sites = () => {
                 <TableHead>Image</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Location</TableHead>
-                <TableHead>Manager</TableHead>
+                <TableHead>Assigned Users</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Actions</TableHead>
@@ -246,7 +241,7 @@ const Sites = () => {
                   <TableCell className="font-medium">{site.name}</TableCell>
                   <TableCell>{site.location || 'N/A'}</TableCell>
                   <TableCell>
-                    {site.manager?.name || site.manager?.phone || 'Unassigned'}
+                    <span className="text-muted-foreground">View Assignments</span>
                   </TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(site.status)}>

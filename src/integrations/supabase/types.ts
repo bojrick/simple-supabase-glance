@@ -474,7 +474,6 @@ export type Database = {
           image_key: string | null
           image_url: string | null
           location: string | null
-          manager_id: string | null
           name: string
           status: string | null
           updated_at: string | null
@@ -486,7 +485,6 @@ export type Database = {
           image_key?: string | null
           image_url?: string | null
           location?: string | null
-          manager_id?: string | null
           name: string
           status?: string | null
           updated_at?: string | null
@@ -498,15 +496,70 @@ export type Database = {
           image_key?: string | null
           image_url?: string | null
           location?: string | null
-          manager_id?: string | null
           name?: string
           status?: string | null
           updated_at?: string | null
         }
+        Relationships: []
+      }
+      user_site_assignments: {
+        Row: {
+          assigned_by: string | null
+          assigned_date: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          permissions: Json | null
+          role: string
+          site_id: string
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          assigned_date?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          permissions?: Json | null
+          role?: string
+          site_id: string
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          assigned_date?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          permissions?: Json | null
+          role?: string
+          site_id?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "sites_manager_id_users_id_fk"
-            columns: ["manager_id"]
+            foreignKeyName: "user_site_assignments_assigned_by_users_id_fk"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_site_assignments_site_id_sites_id_fk"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_site_assignments_user_id_users_id_fk"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -516,6 +569,7 @@ export type Database = {
       users: {
         Row: {
           created_at: string | null
+          details: Json | null
           email: string | null
           id: string
           introduction_sent: boolean | null
@@ -529,6 +583,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          details?: Json | null
           email?: string | null
           id?: string
           introduction_sent?: boolean | null
@@ -542,6 +597,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          details?: Json | null
           email?: string | null
           id?: string
           introduction_sent?: boolean | null
