@@ -149,12 +149,13 @@ const Activities = () => {
   };
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-US', {
+    return new Date(dateString).toLocaleString('en-IN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: 'Asia/Kolkata'
     });
   };
 
@@ -292,8 +293,8 @@ const Activities = () => {
       {/* Image Enlargement Dialog */}
       <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Activity Image</DialogTitle>
+          <DialogHeader>
+            <DialogTitle className="sr-only">Activity Image</DialogTitle>
           </DialogHeader>
           {selectedImage && (
             <div className="relative">
