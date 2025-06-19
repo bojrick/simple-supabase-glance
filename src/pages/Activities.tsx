@@ -144,20 +144,25 @@ const Activities = () => {
   };
 
   const handleImageClick = (imageKey: string) => {
-    setSelectedImage(getImageUrl(imageKey));
+    const imageUrl = getImageUrl(imageKey);
+    setSelectedImage(imageUrl);
     setIsImageDialogOpen(true);
   };
 
   const formatDateTime = (dateString: string) => {
-    // Parse the UTC date string and convert to IST
-    const utcDate = new Date(dateString);
-    return utcDate.toLocaleString('en-IN', {
+    // Create date and ensure it's treated as UTC, then convert to IST
+    const utcDate = new Date(dateString + (dateString.includes('Z') ? '' : 'Z'));
+    
+    // Convert to IST by adding 5 hours 30 minutes
+    const istDate = new Date(utcDate.getTime() + (5.5 * 60 * 60 * 1000));
+    
+    return istDate.toLocaleString('en-IN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      timeZone: 'Asia/Kolkata'
+      hour12: true
     });
   };
 
@@ -294,21 +299,24 @@ const Activities = () => {
 
       {/* Image Enlargement Dialog */}
       <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] p-2">
-          <DialogHeader className="sr-only">
+        <DialogContent className="max-w-4xl max-h-[90vh] p-4">
+          <DialogHeader>
             <DialogTitle>Activity Image</DialogTitle>
           </DialogHeader>
-          {selectedImage && (
-            <div className="relative w-full h-full">
+          {selectedImage ? (
+            <div className="relative w-full flex justify-center">
               <img 
                 src={selectedImage} 
                 alt="Activity Image" 
-                className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+                className="max-w-full max-h-[75vh] object-contain rounded-lg"
                 onError={(e) => {
-                  console.error('Image failed to load:', selectedImage);
                   e.currentTarget.src = '/placeholder.svg';
                 }}
               />
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-64">
+              <p>No image to display</p>
             </div>
           )}
         </DialogContent>
