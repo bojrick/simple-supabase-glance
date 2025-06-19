@@ -149,7 +149,9 @@ const Activities = () => {
   };
 
   const formatDateTime = (dateString: string) => {
-    return new Date(dateString).toLocaleString('en-IN', {
+    // Parse the UTC date string and convert to IST
+    const utcDate = new Date(dateString);
+    return utcDate.toLocaleString('en-IN', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -292,25 +294,21 @@ const Activities = () => {
 
       {/* Image Enlargement Dialog */}
       <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
-          <DialogHeader>
-            <DialogTitle className="sr-only">Activity Image</DialogTitle>
+        <DialogContent className="max-w-4xl max-h-[90vh] p-2">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Activity Image</DialogTitle>
           </DialogHeader>
           {selectedImage && (
-            <div className="relative">
+            <div className="relative w-full h-full">
               <img 
                 src={selectedImage} 
                 alt="Activity Image" 
-                className="w-full h-auto max-h-[85vh] object-contain"
+                className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+                onError={(e) => {
+                  console.error('Image failed to load:', selectedImage);
+                  e.currentTarget.src = '/placeholder.svg';
+                }}
               />
-              <Button
-                variant="secondary"
-                size="sm"
-                className="absolute top-4 right-4"
-                onClick={() => setIsImageDialogOpen(false)}
-              >
-                Close
-              </Button>
             </div>
           )}
         </DialogContent>
