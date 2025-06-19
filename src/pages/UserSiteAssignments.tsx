@@ -26,7 +26,7 @@ const UserSiteAssignments = () => {
     defaultValues: {
       user_id: "",
       site_id: "",
-      role: "worker",
+      role: "employee",
       status: "active",
       notes: ""
     }
@@ -172,7 +172,7 @@ const UserSiteAssignments = () => {
     form.reset({
       user_id: assignment.user_id || "",
       site_id: assignment.site_id || "",
-      role: assignment.role || "worker",
+      role: assignment.role || "employee",
       status: assignment.status || "active",
       notes: assignment.notes || ""
     });
@@ -183,7 +183,7 @@ const UserSiteAssignments = () => {
     form.reset({
       user_id: "",
       site_id: "",
-      role: "worker",
+      role: "employee",
       status: "active",
       notes: ""
     });
@@ -209,8 +209,7 @@ const UserSiteAssignments = () => {
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'manager': return 'bg-blue-100 text-blue-800';
-      case 'worker': return 'bg-green-100 text-green-800';
+      case 'employee': return 'bg-green-100 text-green-800';
       case 'admin': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
