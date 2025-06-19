@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Edit, Trash2, Clock, MapPin, User, Calendar, Expand } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Clock, MapPin, User, Calendar, Expand, Eye, ZoomIn, ZoomOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -19,6 +19,9 @@ const Activities = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [imageZoom, setImageZoom] = useState(1);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -146,7 +149,25 @@ const Activities = () => {
   const handleImageClick = (imageKey: string) => {
     const imageUrl = getImageUrl(imageKey);
     setSelectedImage(imageUrl);
+    setImageZoom(1);
     setIsImageDialogOpen(true);
+  };
+
+  const handleViewActivity = (activity: any) => {
+    setSelectedActivity(activity);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleZoomIn = () => {
+    setImageZoom(prev => Math.min(prev + 0.25, 3));
+  };
+
+  const handleZoomOut = () => {
+    setImageZoom(prev => Math.max(prev - 0.25, 0.5));
+  };
+
+  const resetZoom = () => {
+    setImageZoom(1);
   };
 
   const formatDateTime = (dateString: string) => {
@@ -276,6 +297,18 @@ const Activities = () => {
                     {activity.created_at ? formatDateTime(activity.created_at) : 'No date'}
                   </span>
                 </div>
+
+                <div className="pt-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full"
+                    onClick={() => handleViewActivity(activity)}
+                  >
+                    <Eye className="h-4 w-4 mr-2" />
+                    View Complete Activity
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -299,16 +332,52 @@ const Activities = () => {
 
       {/* Image Enlargement Dialog */}
       <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] p-4">
+        <DialogContent className="max-w-6xl max-h-[95vh] p-4">
           <DialogHeader>
-            <DialogTitle>Activity Image</DialogTitle>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Activity Image</span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleZoomOut}
+                  disabled={imageZoom <= 0.5}
+                >
+                  <ZoomOut className="h-4 w-4" />
+                </Button>
+                <span className="text-sm font-medium min-w-[60px] text-center">
+                  {Math.round(imageZoom * 100)}%
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleZoomIn}
+                  disabled={imageZoom >= 3}
+                >
+                  <ZoomIn className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetZoom}
+                >
+                  Reset
+                </Button>
+              </div>
+            </DialogTitle>
           </DialogHeader>
           {selectedImage ? (
-            <div className="relative w-full flex justify-center">
+            <div className="relative w-full flex justify-center overflow-auto max-h-[80vh]">
               <img 
                 src={selectedImage} 
                 alt="Activity Image" 
-                className="max-w-full max-h-[75vh] object-contain rounded-lg"
+                className="rounded-lg cursor-zoom-in"
+                style={{
+                  transform: `scale(${imageZoom})`,
+                  transformOrigin: 'center',
+                  maxWidth: 'none',
+                  maxHeight: 'none'
+                }}
                 onError={(e) => {
                   e.currentTarget.src = '/placeholder.svg';
                 }}
@@ -317,6 +386,98 @@ const Activities = () => {
           ) : (
             <div className="flex items-center justify-center h-64">
               <p>No image to display</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* View Complete Activity Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Complete Activity Details</DialogTitle>
+          </DialogHeader>
+          {selectedActivity && (
+            <div className="space-y-6">
+              {/* Activity Header */}
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold">
+                    {selectedActivity.activity_type || 'Untitled Activity'}
+                  </h2>
+                  <div className="flex items-center gap-4 mt-2">
+                    <Badge variant="secondary">
+                      {selectedActivity.hours || 0} hours
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {selectedActivity.created_at ? formatDateTime(selectedActivity.created_at) : 'No date'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Activity Image */}
+              {selectedActivity.image_key && (
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">Activity Image</h3>
+                  <div className="relative w-full flex justify-center">
+                    <img 
+                      src={getImageUrl(selectedActivity.image_key)} 
+                      alt="Activity" 
+                      className="max-w-full max-h-96 object-contain rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => handleImageClick(selectedActivity.image_key)}
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground text-center">
+                    Click image to enlarge with zoom controls
+                  </p>
+                </div>
+              )}
+
+              {/* Activity Description */}
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold">Description</h3>
+                <p className="text-muted-foreground whitespace-pre-wrap">
+                  {selectedActivity.description || 'No description provided'}
+                </p>
+              </div>
+
+              {/* Location and User Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    Site Information
+                  </h3>
+                  <div className="space-y-1">
+                    <p><strong>Site:</strong> {selectedActivity.sites?.name || 'No site assigned'}</p>
+                    <p><strong>Location:</strong> {selectedActivity.sites?.location || 'No location'}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    User Information
+                  </h3>
+                  <div className="space-y-1">
+                    <p><strong>Name:</strong> {selectedActivity.users?.name || 'Unknown'}</p>
+                    <p><strong>Phone:</strong> {selectedActivity.users?.phone || 'Not provided'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Details */}
+              {selectedActivity.details && (
+                <div className="space-y-2">
+                  <h3 className="text-lg font-semibold">Additional Details</h3>
+                  <div className="bg-muted p-4 rounded-lg">
+                    <pre className="text-sm whitespace-pre-wrap">
+                      {JSON.stringify(selectedActivity.details, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
