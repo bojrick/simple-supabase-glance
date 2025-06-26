@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,10 +58,13 @@ const Inventory = () => {
     }
   });
 
-  const { data: inventoryTransactions, isLoading: transactionsLoading } = useQuery({
-    queryKey: ['inventory-transactions', selectedSite],
+  const { data: siteInventoryData, isLoading: siteInventoryLoading } = useQuery({
+    queryKey: ['site-inventory', selectedSite],
     queryFn: async () => {
-      let query = supabase
+      if (!selectedSite) return [];
+      
+      // Get all transactions for the selected site
+      const { data: transactions, error } = await supabase
         .from('inventory_transactions')
         .select(`
           *,
@@ -71,22 +73,63 @@ const Inventory = () => {
             name,
             category,
             unit
-          ),
-          sites (
-            id,
-            name,
-            location
           )
         `)
+        .eq('site_id', selectedSite)
         .order('created_at', { ascending: false });
-
-      if (selectedSite) {
-        query = query.eq('site_id', selectedSite);
-      }
-      
-      const { data, error } = await query;
       
       if (error) throw error;
+      return transactions || [];
+    }
+  });
+
+  const { data: siteStockSummary, isLoading: stockSummaryLoading } = useQuery({
+    queryKey: ['site-stock-summary', selectedSite],
+    queryFn: async () => {
+      if (!selectedSite) return [];
+      
+      // Get latest stock levels per item for the selected site
+      const { data, error } = await supabase
+        .rpc('get_site_stock_summary', { site_id_param: selectedSite });
+      
+      if (error) {
+        // Fallback: Calculate stock summary manually
+        const { data: transactions, error: transError } = await supabase
+          .from('inventory_transactions')
+          .select(`
+            item_id,
+            new_stock,
+            created_at,
+            inventory_items (
+              id,
+              name,
+              category,
+              unit
+            )
+          `)
+          .eq('site_id', selectedSite)
+          .order('created_at', { ascending: false });
+        
+        if (transError) throw transError;
+        
+        // Group by item_id and get latest stock
+        const stockMap = new Map();
+        transactions?.forEach(transaction => {
+          if (!stockMap.has(transaction.item_id)) {
+            stockMap.set(transaction.item_id, {
+              item_id: transaction.item_id,
+              current_stock: transaction.new_stock,
+              item_name: transaction.inventory_items?.name,
+              item_category: transaction.inventory_items?.category,
+              item_unit: transaction.inventory_items?.unit,
+              last_updated: transaction.created_at
+            });
+          }
+        });
+        
+        return Array.from(stockMap.values());
+      }
+      
       return data || [];
     }
   });
@@ -240,7 +283,7 @@ const Inventory = () => {
       <Tabs defaultValue="items" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="items">Inventory Items</TabsTrigger>
-          <TabsTrigger value="transactions">Site Transactions</TabsTrigger>
+          <TabsTrigger value="site-inventory">Site Inventory</TabsTrigger>
         </TabsList>
 
         <TabsContent value="items" className="space-y-4">
@@ -322,14 +365,13 @@ const Inventory = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="transactions" className="space-y-4">
+        <TabsContent value="site-inventory" className="space-y-4">
           <div className="flex items-center gap-4">
             <Select value={selectedSite} onValueChange={setSelectedSite}>
               <SelectTrigger className="w-64">
-                <SelectValue placeholder="Filter by site (optional)" />
+                <SelectValue placeholder="Select a site" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Sites</SelectItem>
                 {sites?.map((site) => (
                   <SelectItem key={site.id} value={site.id}>
                     {site.name} - {site.location}
@@ -339,70 +381,124 @@ const Inventory = () => {
             </Select>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                Inventory Transactions 
-                {selectedSite && sites && (
-                  <span className="text-sm font-normal text-muted-foreground ml-2">
-                    - {sites.find(s => s.id === selectedSite)?.name}
-                  </span>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {transactionsLoading ? (
-                <div>Loading transactions...</div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Item</TableHead>
-                      <TableHead>Site</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Quantity</TableHead>
-                      <TableHead>Previous Stock</TableHead>
-                      <TableHead>New Stock</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Notes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {inventoryTransactions?.map((transaction) => (
-                      <TableRow key={transaction.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{transaction.inventory_items?.name}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {transaction.inventory_items?.category} • {transaction.inventory_items?.unit}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{transaction.sites?.name || 'N/A'}</div>
-                            <div className="text-sm text-muted-foreground">{transaction.sites?.location}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getTransactionTypeColor(transaction.transaction_type)}>
-                            {transaction.transaction_type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{transaction.quantity}</TableCell>
-                        <TableCell>{transaction.previous_stock}</TableCell>
-                        <TableCell>{transaction.new_stock}</TableCell>
-                        <TableCell>
-                          {transaction.created_at ? new Date(transaction.created_at).toLocaleDateString() : 'N/A'}
-                        </TableCell>
-                        <TableCell>{transaction.notes || 'N/A'}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+          {selectedSite ? (
+            <div className="space-y-6">
+              {/* Stock Summary Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    Current Stock Levels - {sites?.find(s => s.id === selectedSite)?.name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {stockSummaryLoading ? (
+                    <div>Loading stock summary...</div>
+                  ) : siteStockSummary && siteStockSummary.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Item</TableHead>
+                          <TableHead>Category</TableHead>
+                          <TableHead>Current Stock</TableHead>
+                          <TableHead>Unit</TableHead>
+                          <TableHead>Last Updated</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {siteStockSummary.map((stock: any) => (
+                          <TableRow key={stock.item_id}>
+                            <TableCell className="font-medium">{stock.item_name}</TableCell>
+                            <TableCell>{stock.item_category || 'N/A'}</TableCell>
+                            <TableCell>
+                              <Badge variant={stock.current_stock > 0 ? "default" : "destructive"}>
+                                {stock.current_stock}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{stock.item_unit}</TableCell>
+                            <TableCell>
+                              {stock.last_updated ? new Date(stock.last_updated).toLocaleDateString() : 'N/A'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No stock data available for this site</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Transactions History Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Transaction History</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {siteInventoryLoading ? (
+                    <div>Loading transactions...</div>
+                  ) : siteInventoryData && siteInventoryData.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Item</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Quantity</TableHead>
+                          <TableHead>Previous Stock</TableHead>
+                          <TableHead>New Stock</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Notes</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {siteInventoryData.map((transaction) => (
+                          <TableRow key={transaction.id}>
+                            <TableCell>
+                              <div>
+                                <div className="font-medium">{transaction.inventory_items?.name}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  {transaction.inventory_items?.category} • {transaction.inventory_items?.unit}
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge className={getTransactionTypeColor(transaction.transaction_type)}>
+                                {transaction.transaction_type}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{transaction.quantity}</TableCell>
+                            <TableCell>{transaction.previous_stock}</TableCell>
+                            <TableCell>{transaction.new_stock}</TableCell>
+                            <TableCell>
+                              {transaction.created_at ? new Date(transaction.created_at).toLocaleDateString() : 'N/A'}
+                            </TableCell>
+                            <TableCell>{transaction.notes || 'N/A'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No transactions found for this site</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Package className="h-16 w-16 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-medium mb-2">Select a Site</h3>
+                <p className="text-muted-foreground text-center">
+                  Choose a site from the dropdown above to view its inventory stock levels and transaction history.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 
