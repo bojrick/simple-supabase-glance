@@ -263,7 +263,7 @@ const UserSiteAssignments = () => {
                 <TableHead>Site</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Assigned Date</TableHead>
+                <TableHead>Created Date</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -293,7 +293,7 @@ const UserSiteAssignments = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {assignment.assigned_date ? new Date(assignment.assigned_date).toLocaleDateString() : 'N/A'}
+                    {assignment.created_at ? new Date(assignment.created_at).toLocaleDateString() : 'N/A'}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
