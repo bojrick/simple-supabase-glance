@@ -63,6 +63,36 @@ export type Database = {
           },
         ]
       }
+      authorized_persons: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          phone: string
+          position: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          phone: string
+          position: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          phone?: string
+          position?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           created_at: string | null
@@ -173,10 +203,12 @@ export type Database = {
           category: string | null
           created_at: string | null
           created_by: string | null
-          current_stock: number | null
+          gujarati_category: string | null
+          gujarati_name: string | null
+          gujarati_unit: string | null
           id: string
+          item_code: string | null
           name: string
-          site_id: string | null
           status: string | null
           unit: string
           updated_at: string | null
@@ -185,10 +217,12 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           created_by?: string | null
-          current_stock?: number | null
+          gujarati_category?: string | null
+          gujarati_name?: string | null
+          gujarati_unit?: string | null
           id?: string
+          item_code?: string | null
           name: string
-          site_id?: string | null
           status?: string | null
           unit: string
           updated_at?: string | null
@@ -197,10 +231,12 @@ export type Database = {
           category?: string | null
           created_at?: string | null
           created_by?: string | null
-          current_stock?: number | null
+          gujarati_category?: string | null
+          gujarati_name?: string | null
+          gujarati_unit?: string | null
           id?: string
+          item_code?: string | null
           name?: string
-          site_id?: string | null
           status?: string | null
           unit?: string
           updated_at?: string | null
@@ -213,13 +249,6 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "inventory_items_site_id_sites_id_fk"
-            columns: ["site_id"]
-            isOneToOne: false
-            referencedRelation: "sites"
-            referencedColumns: ["id"]
-          },
         ]
       }
       inventory_transactions: {
@@ -227,6 +256,8 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           id: string
+          image_key: string | null
+          image_url: string | null
           item_id: string
           new_stock: number
           notes: string | null
@@ -239,6 +270,8 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           id?: string
+          image_key?: string | null
+          image_url?: string | null
           item_id: string
           new_stock: number
           notes?: string | null
@@ -251,6 +284,8 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           id?: string
+          image_key?: string | null
+          image_url?: string | null
           item_id?: string
           new_stock?: number
           notes?: string | null
@@ -412,6 +447,42 @@ export type Database = {
           },
         ]
       }
+      materials: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          material_group: string
+          name: string
+          terms: string | null
+          unit: string
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          material_group: string
+          name: string
+          terms?: string | null
+          unit: string
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          material_group?: string
+          name?: string
+          terms?: string | null
+          unit?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       message_logs: {
         Row: {
           content: string | null
@@ -441,6 +512,144 @@ export type Database = {
           phone?: string | null
         }
         Relationships: []
+      }
+      purchase_order_items: {
+        Row: {
+          created_at: string | null
+          id: string
+          item_order: number
+          material_id: string
+          purchase_order_id: string
+          quantity: number
+          rate: number
+          total: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          item_order: number
+          material_id: string
+          purchase_order_id: string
+          quantity: number
+          rate: number
+          total: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          item_order?: number
+          material_id?: string
+          purchase_order_id?: string
+          quantity?: number
+          rate?: number
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_items_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_purchase_order_id_fkey"
+            columns: ["purchase_order_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          confirmed_by_id: string | null
+          contact_person_id: string | null
+          created_at: string | null
+          created_by: string
+          delivery_date: string | null
+          delivery_time: string | null
+          id: string
+          material_terms: string | null
+          ordered_by_id: string | null
+          po_date: string
+          po_number: string
+          status: string | null
+          total_amount: number | null
+          updated_at: string | null
+          vendor_id: string
+        }
+        Insert: {
+          confirmed_by_id?: string | null
+          contact_person_id?: string | null
+          created_at?: string | null
+          created_by: string
+          delivery_date?: string | null
+          delivery_time?: string | null
+          id?: string
+          material_terms?: string | null
+          ordered_by_id?: string | null
+          po_date: string
+          po_number: string
+          status?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+          vendor_id: string
+        }
+        Update: {
+          confirmed_by_id?: string | null
+          contact_person_id?: string | null
+          created_at?: string | null
+          created_by?: string
+          delivery_date?: string | null
+          delivery_time?: string | null
+          id?: string
+          material_terms?: string | null
+          ordered_by_id?: string | null
+          po_date?: string
+          po_number?: string
+          status?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_confirmed_by_id_fkey"
+            columns: ["confirmed_by_id"]
+            isOneToOne: false
+            referencedRelation: "authorized_persons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_contact_person_id_fkey"
+            columns: ["contact_person_id"]
+            isOneToOne: false
+            referencedRelation: "authorized_persons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_ordered_by_id_fkey"
+            columns: ["ordered_by_id"]
+            isOneToOne: false
+            referencedRelation: "authorized_persons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sessions: {
         Row: {
@@ -505,12 +714,11 @@ export type Database = {
       user_site_assignments: {
         Row: {
           assigned_by: string | null
-          assigned_date: string | null
           created_at: string | null
           id: string
           notes: string | null
           permissions: Json | null
-          role: string
+          role: string | null
           site_id: string
           status: string | null
           updated_at: string | null
@@ -518,12 +726,11 @@ export type Database = {
         }
         Insert: {
           assigned_by?: string | null
-          assigned_date?: string | null
           created_at?: string | null
           id?: string
           notes?: string | null
           permissions?: Json | null
-          role?: string
+          role?: string | null
           site_id: string
           status?: string | null
           updated_at?: string | null
@@ -531,12 +738,11 @@ export type Database = {
         }
         Update: {
           assigned_by?: string | null
-          assigned_date?: string | null
           created_at?: string | null
           id?: string
           notes?: string | null
           permissions?: Json | null
-          role?: string
+          role?: string | null
           site_id?: string
           status?: string | null
           updated_at?: string | null
@@ -569,7 +775,6 @@ export type Database = {
       users: {
         Row: {
           created_at: string | null
-          details: Json | null
           email: string | null
           id: string
           introduction_sent: boolean | null
@@ -583,7 +788,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
-          details?: Json | null
           email?: string | null
           id?: string
           introduction_sent?: boolean | null
@@ -597,7 +801,6 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
-          details?: Json | null
           email?: string | null
           id?: string
           introduction_sent?: boolean | null
@@ -608,6 +811,45 @@ export type Database = {
           role?: string
           updated_at?: string | null
           verified_at?: string | null
+        }
+        Relationships: []
+      }
+      vendors: {
+        Row: {
+          address: string
+          contact_person: string
+          created_at: string | null
+          gst_number: string
+          id: string
+          is_active: boolean | null
+          material_groups: string[]
+          name: string
+          phone: string
+          updated_at: string | null
+        }
+        Insert: {
+          address: string
+          contact_person: string
+          created_at?: string | null
+          gst_number: string
+          id?: string
+          is_active?: boolean | null
+          material_groups: string[]
+          name: string
+          phone: string
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string
+          contact_person?: string
+          created_at?: string | null
+          gst_number?: string
+          id?: string
+          is_active?: boolean | null
+          material_groups?: string[]
+          name?: string
+          phone?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
